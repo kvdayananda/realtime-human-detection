@@ -1,0 +1,22 @@
+{
+    "architecture": "resnet18",
+    "num_classes": 2,
+    "class_to_idx": {
+        "0": 0,
+        "1": 1
+    },
+    "image_size": 224,
+    "normalization": {
+        "mean": [
+            0.485,
+            0.456,
+            0.406
+        ],
+        "std": [
+            0.229,
+            0.224,
+            0.225
+        ]
+    },
+    "best_validation_loss": 0.4329746771549833
+}

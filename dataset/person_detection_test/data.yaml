@@ -1,0 +1,6 @@
+path: D:/realtime-human-detection/dataset/person_detection_test
+train: images
+val: images
+
+names:
+  0: person

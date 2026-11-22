@@ -1,0 +1,21 @@
+# FitRange Mirror - Computer Vision Requirements
+# Tested on Python 3.10 - 3.12 (Windows / Linux / macOS)
+
+# Core Deep Learning Framework
+torch>=2.0.0
+torchvision>=0.15.0
+
+# YOLO Engine
+ultralytics>=8.0.0
+
+# ONNX Export & Standalone Edge Runtime
+onnx>=1.14.0,<=1.16.2
+onnxruntime>=1.15.0
+
+# Computer Vision & Image Processing
+opencv-python>=4.8.0
+Pillow>=9.5.0
+
+# Scientific Computing & Data Structures (Pinned for MediaPipe & ONNX compatibility)
+numpy>=1.23.0,<2.0.0
+protobuf>=4.25.3,<5.0.0

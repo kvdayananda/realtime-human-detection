@@ -303,4 +303,11 @@ class TestHumanDetection(unittest.TestCase):
         # Check confidence difference
         conf_diff = abs(pt_res[0]["confidence"] - onnx_res[0]["confidence"])
         self.assertLess(
-         
+            conf_diff,
+            0.05,
+            f"Confidence difference between PyTorch and ONNX is too high: {conf_diff:.4f}",
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

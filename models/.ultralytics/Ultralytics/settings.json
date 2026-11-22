@@ -1,0 +1,19 @@
+{
+  "settings_version": "0.0.8",
+  "datasets_dir": "C:\\Users\\datasets",
+  "weights_dir": "C:\\Users\\dayan\\weights",
+  "runs_dir": "C:\\Users\\dayan\\Downloads\\realtime-human-detection-main\\realtime-human-detection-main\\runs",
+  "uuid": "6d025450af9977ff23e23fac060115f6a743c83b55544b5773f0ec14cf6fb094",
+  "sync": true,
+  "api_key": "",
+  "openai_api_key": "",
+  "clearml": true,
+  "comet": true,
+  "dvc": true,
+  "mlflow": true,
+  "raytune": true,
+  "tensorboard": false,
+  "wandb": false,
+  "vscode_msg": true,
+  "openvino_msg": false
+}

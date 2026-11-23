@@ -37,6 +37,7 @@ class FitRangeMirrorPipeline:
         enable_detection: bool = True,
         enable_segmentation: bool = True,
         enable_pose: bool = True,
+        single_person_mode: bool = True,
         pose_complexity: int = 1,
         pose_static_mode: bool = False,
         providers: Optional[List[str]] = None,
@@ -74,6 +75,7 @@ class FitRangeMirrorPipeline:
         self.enable_detection = enable_detection
         self.enable_segmentation = enable_segmentation
         self.enable_pose = enable_pose
+        self.single_person_mode = single_person_mode
         self.det_conf = det_conf
         self.seg_conf = seg_conf
         self.pose_conf = pose_conf
@@ -246,7 +248,26 @@ class FitRangeMirrorPipeline:
                 logger.error("Error during segmentation inference: %s", e, exc_info=True)
                 raise
 
-        # 3. Run pose estimation if enabled
+        # 3. Filter to single main person if single-person mode is enabled
+        if self.single_person_mode:
+            if len(detections) > 1:
+                # Select the largest bounding box (primary user closest to mirror)
+                detections.sort(
+                    key=lambda d: (d["bbox"][2] - d["bbox"][0]) * (d["bbox"][3] - d["bbox"][1]),
+                    reverse=True,
+                )
+                detections = detections[:1]
+
+            if len(segmentations) > 1:
+                # Select the largest segmentation mask area
+                segmentations.sort(key=lambda s: s.get("mask_area", 0), reverse=True)
+                segmentations = segmentations[:1]
+                if self.segmenter is not None:
+                    composite_mask = self.segmenter.get_composite_mask(
+                        img_bgr, segmentations=segmentations
+                    )
+
+        # 4. Run pose estimation if enabled
         pose_data: Dict[str, Any] = {
             "has_pose": False,
             "landmarks": [],
@@ -259,7 +280,7 @@ class FitRangeMirrorPipeline:
                 logger.error("Error during pose estimation: %s", e, exc_info=True)
                 raise
 
-        # 4. Determine person count and presence
+        # 5. Determine person count and presence
         if self.detector is not None:
             person_count = len(detections)
         elif self.segmenter is not None:
@@ -387,7 +408,10 @@ class FitRangeMirrorPipeline:
                 x1, y1, x2, y2 = map(int, item["bbox"])
                 cv2.rectangle(vis, (x1, y1), (x2, y2), bbox_color, 2)
                 confidence = item.get("confidence", 0.0)
-                label = f"Person {index + 1}: {confidence:.2f}"
+                if self.single_person_mode:
+                    label = f"Person: {confidence:.2f}"
+                else:
+                    label = f"Person {index + 1}: {confidence:.2f}"
                 (lw, lh), _ = cv2.getTextSize(
                     label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1
                 )
@@ -413,7 +437,11 @@ class FitRangeMirrorPipeline:
         if show_hud:
             person_count = result.get("person_count", 0)
             pose_detected = result.get("pose", {}).get("has_pose", False)
-            status_text = f"FitRange Mirror | People: {person_count} | Pose: {'YES' if pose_detected else 'NO'}"
+            if self.single_person_mode:
+                user_status = "ACTIVE" if (person_count > 0 or pose_detected) else "NO USER"
+                status_text = f"FitRange Mirror | User: {user_status} | Pose: {'YES' if pose_detected else 'NO'}"
+            else:
+                status_text = f"FitRange Mirror | People: {person_count} | Pose: {'YES' if pose_detected else 'NO'}"
             if fps is not None:
                 status_text += f" | FPS: {fps:.1f}"
 

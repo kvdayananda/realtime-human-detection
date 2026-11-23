@@ -363,9 +363,10 @@ def run_independent_evaluation() -> None:
     with open(cond_json_path, "w", encoding="utf-8") as f:
         json.dump(cond_results, f, indent=2)
 
-    # 4. Generate 7-Panel Visualizations for Selected Annotated Samples (e.g. first 5 negative controls)
+    # 4. Generate 7-Panel Visualizations for Annotated Samples (Negative controls + Positive samples)
     print("Generating 7-panel visualization sets in runs/independent_evaluation/visualizations/ ...")
-    for stem in annotated_stems[:5]:
+    sample_stems_for_vis = [s for s in annotated_stems if "neg" in s][:3] + [s for s in annotated_stems if "pos" in s]
+    for stem in sample_stems_for_vis:
         generate_comparison_visualizations(
             image_path=img_dir / f"{stem}.png",
             det_txt=det_dir / f"{stem}.txt",

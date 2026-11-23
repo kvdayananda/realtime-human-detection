@@ -312,6 +312,37 @@ class TestFitRangeMirrorPipeline(unittest.TestCase):
         self.assertEqual(result["pose"]["landmarks"], [])
         self.assertEqual(result["pose"]["world_landmarks"], [])
 
+    def test_12_single_person_mode_filter(self):
+        """Test that single_person_mode isolates only the primary user in multi-person frame."""
+        frame = cv2.imread(str(self.positive_image_path))
+        multi_frame = np.hstack([frame, frame])
+
+        # Test single_person_mode=True (default)
+        single_pipeline = FitRangeMirrorPipeline(
+            detection_model_path=self.det_model_path,
+            segmentation_model_path=self.seg_model_path,
+            enable_pose=False,
+            single_person_mode=True,
+        )
+        single_res = single_pipeline.process_frame(multi_frame)
+        self.assertTrue(single_res["has_person"])
+        self.assertEqual(single_res["person_count"], 1)
+        self.assertEqual(len(single_res["detections"]), 1)
+        self.assertEqual(len(single_res["segmentations"]), 1)
+
+        # Test single_person_mode=False (multi-person tracking)
+        multi_pipeline = FitRangeMirrorPipeline(
+            detection_model_path=self.det_model_path,
+            segmentation_model_path=self.seg_model_path,
+            enable_pose=False,
+            single_person_mode=False,
+        )
+        multi_res = multi_pipeline.process_frame(multi_frame)
+        self.assertTrue(multi_res["has_person"])
+        self.assertGreaterEqual(multi_res["person_count"], 2)
+        self.assertGreaterEqual(len(multi_res["detections"]), 2)
+        self.assertGreaterEqual(len(multi_res["segmentations"]), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

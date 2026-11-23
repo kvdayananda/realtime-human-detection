@@ -3,7 +3,7 @@
   "flags": {},
   "shapes": [
     {
-      "label": "1",
+      "label": "person",
       "points": [
         [
           34.1958944281525,
@@ -21,7 +21,7 @@
       "mask": null
     },
     {
-      "label": "2",
+      "label": "person",
       "points": [
         [
           106.26627565982405,
@@ -39,7 +39,7 @@
       "mask": null
     },
     {
-      "label": "2",
+      "label": "person",
       "points": [
         [
           177.73607038123168,

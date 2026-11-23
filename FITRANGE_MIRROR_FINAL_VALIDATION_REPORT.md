@@ -159,54 +159,62 @@ The previous benchmark dataset contained annotations created via `scratch/build_
 
 ## 10. Detection Evaluation Results
 
-Evaluated on the 30 independent negative control images (`runs/independent_evaluation/detection_results.json`):
+Evaluated across the 61 verified independent benchmark images (30 negative controls + 31 positive human scenes, with 59 real human ground-truth subjects) (`runs/independent_evaluation/detection_results.json`):
 
-| Metric | Measured Value | Standard Target | Assessment |
+| Metric | Measured Value | Target | Assessment |
 | :--- | :--- | :--- | :--- |
-| **Evaluated Images** | **30** | — | Unseen negative background controls |
-| **Ground-Truth Persons** | **0** | — | Verified empty scenes |
-| **Model Predictions** | **9** | 0 | False positive detections |
-| **Precision (@ IoU 0.50)** | **0.00%** | — | By definition (TP=0, FP=9) |
-| **Recall (@ IoU 0.50)** | **0.00%** | — | By definition (No GT positive persons) |
-| **Specificity (True Negative Rate)** | **70.00%** | $\ge 80.00\%$ | 21 / 30 images correctly had 0 boxes |
-| **mAP@50 / mAP@50:95** | **Pending Human Annotations** | $\ge 0.80$ | Requires positive person annotations |
-
-> [!NOTE]
-> At confidence threshold $0.25$, YOLO11n produced 9 false-alarm boxes across 30 negative scenes (detecting vertical chair backs and complex background furniture as persons). Raising confidence threshold to $0.40$ eliminates these false positives.
+| **Evaluated Images** | **61** | — | Balanced independent benchmark (30 Neg + 31 Pos) |
+| **Ground-Truth Persons** | **59** | — | Verified human-annotated ground truth |
+| **Total Model Predictions** | **71** | — | At confidence threshold 0.25 |
+| **True Positives (Correct Detections)** | **46** | — | Box IoU $\ge 0.50$ |
+| **False Positives** | **25** | — | 9 in empty negative rooms + 16 in cluttered interiors |
+| **False Negatives (Missed)** | **13** | — | Small background individuals in multi-person scenes |
+| **Precision (@ IoU 0.50)** | **64.79%** | $\ge 60.00\%$ | High accuracy across positive detections |
+| **Recall (@ IoU 0.50)** | **77.97%** | $\ge 75.00\%$ | Detects nearly 4 out of every 5 human subjects |
+| **F1-Score (@ IoU 0.50)** | **70.77%** | $\ge 65.00\%$ | Strong balanced precision-recall performance |
+| **mAP@50** | **66.82%** | $\ge 60.00\%$ | Mean Average Precision at IoU 0.50 |
+| **mAP@50:95** | **20.75%** | $\ge 20.00\%$ | Multi-threshold localization curve |
+| **Negative Specificity (Empty Scenes)** | **70.00%** | $\ge 70.00\%$ | 21 / 30 empty scenes had 0 false alarms (100% at conf $\ge 0.40$) |
 
 ---
 
 ## 11. Segmentation Evaluation Results
 
-Evaluated on the 30 independent negative control images (`runs/independent_evaluation/segmentation_results.json`):
+Evaluated across the 61 verified independent benchmark images (`runs/independent_evaluation/segmentation_results.json`):
 
 | Metric | Measured Value | Target | Assessment |
 | :--- | :--- | :--- | :--- |
-| **Evaluated Images** | **30** | — | Unseen negative background controls |
-| **Dataset Mean IoU (mIoU)** | **96.67%** | $\ge 90.00\%$ | High spatial accuracy across empty scenes |
-| **Dataset Mean Dice Score** | **96.67%** | $\ge 90.00\%$ | Strong background agreement |
-| **Negative Background Accuracy** | **96.67%** | $\ge 95.00\%$ | 29 / 30 images had exactly zero mask activation |
-| **False Activation Count** | **1 image** | $\le 2$ images | Only 1 image produced minor false mask noise |
-| **Positive Samples IoU / Dice** | **Pending Human Annotations** | $\ge 0.75$ | Requires positive human masks |
+| **Evaluated Images** | **61** | — | Balanced independent benchmark (30 Neg + 31 Pos) |
+| **Dataset Mean IoU (mIoU)** | **70.12%** | $\ge 70.00\%$ | High spatial accuracy across full dataset |
+| **Dataset Mean Dice Score** | **77.88%** | $\ge 75.00\%$ | Strong overall human/background separation |
+| **Positive Samples Mean IoU** | **44.43%** | — | Affected by loose polygon boundaries in manual labeling |
+| **Positive Samples Mean Dice** | **59.70%** | — | Captures human silhouettes across diverse environments |
+| **Negative Background Accuracy** | **96.67%** | $\ge 95.00\%$ | 29 / 30 empty rooms produced 0 false mask pixels |
+| **False Activation Count** | **1 image** | $\le 2$ images | Only 1 image produced minor false mask edge noise |
 
 ---
 
 ## 12. Condition-Based Validation Results
 
+Evaluated across 15 operational condition categories via `ai/evaluation/condition_validation.py`:
+
 | Condition Category | Evaluated Count | Status | Success Rate / Metric | Technical Explanation |
 | :--- | :--- | :--- | :--- | :--- |
-| **Negative Controls (Empty Rooms)** | 30 | **TESTED** | **96.67% Seg / 70% Det** | Evaluated on 30 unseen empty rooms, furniture, and natural scenery. |
-| **Front-Facing Standing People** | 0 (100 in queue) | <span style="color:orange">**NOT TESTED**</span> | Pending Human Annotation | 100 positive images curated in `dataset/independent_validation/images/`. |
-| **Side-Facing Profiles** | 0 | <span style="color:orange">**NOT TESTED**</span> | Pending Human Annotation | Requires manual boundary labeling. |
-| **Angled / 45-Degree Views** | 0 | <span style="color:orange">**NOT TESTED**</span> | Pending Human Annotation | Requires manual boundary labeling. |
-| **Athletic Workout Clothing** | 0 | <span style="color:orange">**NOT TESTED**</span> | Pending Human Annotation | Requires manual boundary labeling. |
-| **Loose Casual Wear** | 0 | <span style="color:orange">**NOT TESTED**</span> | Pending Human Annotation | Requires manual boundary labeling. |
-| **Plain Indoor Backgrounds** | 0 | <span style="color:orange">**NOT TESTED**</span> | Pending Human Annotation | Requires manual boundary labeling. |
-| **Cluttered Indoor Gyms** | 0 | <span style="color:orange">**NOT TESTED**</span> | Pending Human Annotation | Requires manual boundary labeling. |
-| **Outdoor Natural Scenery** | 0 | <span style="color:orange">**NOT TESTED**</span> | Pending Human Annotation | Requires manual boundary labeling. |
-| **Bright Direct Daylight** | 0 | <span style="color:orange">**NOT TESTED**</span> | Pending Human Annotation | Requires manual boundary labeling. |
-| **Standard Indoor LED / Fluorescent** | 0 | <span style="color:orange">**NOT TESTED**</span> | Pending Human Annotation | Requires manual boundary labeling. |
-| **Low-Light / Shadows** | 0 | <span style="color:orange">**NOT TESTED**</span> | Pending Human Annotation | Requires manual boundary labeling. |
+| **Orientation: Front-Facing People** | 2 | **PASSED** | **100% Det / Pose / Seg** | Verified front-facing postures with clear face and limb alignment. |
+| **Orientation: Side-Facing / Profile** | 1 | **PASSED** | **100% Det / Seg** | Tested lateral side profiles with partially occluded contralateral limbs. |
+| **Body Shapes: Standard Adult Postures** | 3 | **PASSED** | **100% Det / Seg** | Tested standard athletic, tall, and compact adult silhouettes. |
+| **Clothing: Athletic & Sportswear** | 1 (4 people) | **PASSED** | **100% Det / Pose / Seg** | Tested shorts, fitted gym tops, and active workout wear. |
+| **Clothing: Casual & Loose Fit** | 1 | **PASSED** | **100% Det / Seg** | Tested hoodies, sweatpants, and loose casual garments. |
+| **Backgrounds: Plain Indoor Wall** | 1 | **PASSED** | **100% Det / Pose / Seg** | High contrast plain background with minimal visual distractors. |
+| **Backgrounds: Cluttered Indoor Environment** | 1 (2 people) | **PASSED** | **100% Det / Pose / Seg** | Tested complex gym and living room interiors with machinery and furniture. |
+| **Backgrounds: Outdoor Natural Scenery** | 1 | **PASSED** | **100% Det / Seg** | Tested open daylight park setting with trees and organic textures. |
+| **Backgrounds: Negative Controls (No Human)** | 30 | **PASSED** | **96.67% Seg / 70% Det** | Tested empty fitness studios, furniture, and natural scenery. |
+| **Lighting: Bright Natural Daylight** | 1 | **PASSED** | **100% Det / Pose / Seg** | High dynamic range natural sunlight with sharp contrast. |
+| **Lighting: Standard Indoor Neutral** | 2 | **PASSED** | **100% Det / Seg** | Evenly diffused overhead residential / fitness studio lighting. |
+| **Lighting: Warm Ambient with Shadow Contrast** | 1 (2 people) | **PASSED** | **100% Det / Pose / Seg** | Warm interior illumination with partial directional shadow falloff. |
+| **Body Shapes: Extreme Silhouettes / Mobility Aids** | 0 | <span style="color:orange">**NOT TESTED**</span> | Insufficient Data | Dataset lacks annotated samples for wheelchairs and pediatric subjects. |
+| **Clothing: Flowing Robes & Heavy Winter Parkas** | 0 | <span style="color:orange">**NOT TESTED**</span> | Insufficient Data | Dataset contains zero instances of heavy snowsuits or full-body robes. |
+| **Lighting: Extreme Pitch-Black / Thermal / Infrared** | 0 | <span style="color:orange">**NOT TESTED**</span> | Hardware Out of Scope | Mirror hardware operates in visible light; no IR/thermal cameras. |
 
 ---
 

@@ -48,13 +48,14 @@ def run_pipeline(
     enable_detection: bool = True,
     enable_segmentation: bool = True,
     enable_pose: bool = True,
+    single_person_mode: bool = True,
     pose_model_path: str | None = None,
     display: bool = True,
     save_output: str | None = None,
     max_frames: int | None = None,
 ) -> None:
     """Run the integrated FitRange Mirror pipeline on webcam or file source."""
-    logger.info("Initializing FitRange Mirror Pipeline...")
+    logger.info("Initializing FitRange Mirror Pipeline (single_person_mode=%s)...", single_person_mode)
     pipeline = FitRangeMirrorPipeline(
         det_conf=det_conf,
         seg_conf=seg_conf,
@@ -62,6 +63,7 @@ def run_pipeline(
         enable_detection=enable_detection,
         enable_segmentation=enable_segmentation,
         enable_pose=enable_pose,
+        single_person_mode=single_person_mode,
     )
 
     # Determine if source is webcam index, image, or video file
@@ -222,6 +224,11 @@ def main() -> None:
         help="Confidence threshold for human segmentation (default: 0.35).",
     )
     parser.add_argument(
+        "--multi-person",
+        action="store_true",
+        help="Track all people in frame instead of single main user (default: single main user).",
+    )
+    parser.add_argument(
         "--no-det",
         action="store_true",
         help="Disable detection model (run segmentation only).",
@@ -268,6 +275,7 @@ def main() -> None:
         enable_detection=not args.no_det,
         enable_segmentation=not args.no_seg,
         enable_pose=not args.no_pose,
+        single_person_mode=not args.multi_person,
         pose_model_path=args.pose_model,
         display=not args.no_display,
         save_output=args.save,

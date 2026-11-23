@@ -89,16 +89,24 @@ Each segmentation mask is a PNG image matching the exact pixel dimensions `(heig
 ## 5. Recommended Annotation Tooling
 
 ### Option A: Labelme (Recommended for Polygon & Box Annotation)
-1. Install Labelme:
+1. Install Labelme (in your annotation environment, e.g. `C:\vf-label\venv`):
    ```bash
    pip install labelme
    ```
-2. Launch Labelme:
-   ```bash
-   labelme dataset/independent_validation/images --nodata
-   ```
+2. Launch Labelme **strictly for positive images** (avoids negative control images):
+   * On Windows PowerShell:
+     ```powershell
+     labelme (Get-ChildItem dataset/independent_validation/images/val_pos_*.png) --nodata
+     ```
+   * Or open specific batches:
+     ```powershell
+     labelme dataset/independent_validation/images/val_pos_001.png --nodata
+     ```
+   > [!WARNING]
+   > Do not open the entire `dataset/independent_validation/images/` directory without filtering, because `val_neg_001.png` - `val_neg_030.png` will appear first alphabetically. The 30 negative control images must remain empty.
+
 3. Annotation Procedure:
-   * Draw polygons around each person with label `person`.
+   * Draw polygons or tight bounding boxes around each human subject with label `person`.
    * Save the `.json` files alongside the images.
 4. Convert Labelme JSON to YOLO boxes and binary PNG masks:
    ```bash

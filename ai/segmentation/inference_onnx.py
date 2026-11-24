@@ -458,6 +458,12 @@ def main() -> None:
         default=640,
         help="Inference image resolution (default: 640).",
     )
+    parser.add_argument(
+        "--save-mask",
+        type=str,
+        default=None,
+        help="Optional path to save full-resolution binary mask image (0 or 255).",
+    )
     args = parser.parse_args()
 
     segmenter = HumanSegmenterONNX(
@@ -467,6 +473,10 @@ def main() -> None:
         imgsz=args.imgsz,
     )
     output = segmenter.segment(args.image)
+
+    if args.save_mask:
+        mask = segmenter.get_composite_mask(args.image, segmentations=output["segmentations"])
+        cv2.imwrite(args.save_mask, mask)
     cli_output = {
         "segmentations": [
             {

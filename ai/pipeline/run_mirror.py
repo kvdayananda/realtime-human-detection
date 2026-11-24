@@ -49,13 +49,15 @@ def run_pipeline(
     enable_segmentation: bool = True,
     enable_pose: bool = True,
     single_person_mode: bool = True,
+    view_mode: str = "overlay",
     pose_model_path: str | None = None,
     display: bool = True,
     save_output: str | None = None,
+    save_mask: str | None = None,
     max_frames: int | None = None,
 ) -> None:
     """Run the integrated FitRange Mirror pipeline on webcam or file source."""
-    logger.info("Initializing FitRange Mirror Pipeline (single_person_mode=%s)...", single_person_mode)
+    logger.info("Initializing FitRange Mirror Pipeline (single_person_mode=%s, view=%s)...", single_person_mode, view_mode)
     pipeline = FitRangeMirrorPipeline(
         det_conf=det_conf,
         seg_conf=seg_conf,
@@ -126,11 +128,16 @@ def run_pipeline(
             latency_ms,
         )
 
-        vis = pipeline.render_visualization(frame, result, fps=fps)
+        vis = pipeline.render_visualization(frame, result, fps=fps, view_mode=view_mode)
 
         if save_output:
             cv2.imwrite(save_output, vis)
             logger.info("Saved annotated image to: %s", save_output)
+
+        if save_mask:
+            mask_card = pipeline.render_binary_mask(result, show_card=True)
+            cv2.imwrite(save_mask, mask_card)
+            logger.info("Saved binary mask card to: %s", save_mask)
 
         if display:
             window_name = "FitRange Mirror - Static Preview"
@@ -157,7 +164,13 @@ def run_pipeline(
     prev_time = time.perf_counter()
     frame_count = 0
 
-    logger.info("Starting real-time processing loop. Press 'q' in window to exit.")
+    available_views = ["overlay", "mask", "mask-card", "side-by-side"]
+    current_view_idx = available_views.index(view_mode) if view_mode in available_views else 0
+
+    logger.info(
+        "Starting real-time processing loop. Press 'q' to exit, 'm' or 'v' to toggle view modes (%s).",
+        available_views,
+    )
 
     try:
         while True:
@@ -174,16 +187,21 @@ def run_pipeline(
             fps = 1.0 / max(curr_time - prev_time, 1e-6)
             prev_time = curr_time
 
-            vis = pipeline.render_visualization(frame, result, fps=fps)
+            active_view = available_views[current_view_idx]
+            vis = pipeline.render_visualization(frame, result, fps=fps, view_mode=active_view)
 
             if writer is not None:
                 writer.write(vis)
 
             if display:
                 cv2.imshow(window_name, vis)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord("q"):
                     logger.info("User requested exit ('q' pressed).")
                     break
+                elif key in (ord("m"), ord("v")):
+                    current_view_idx = (current_view_idx + 1) % len(available_views)
+                    logger.info("Switched view mode to: %s", available_views[current_view_idx])
 
             frame_count += 1
             if max_frames and frame_count >= max_frames:
@@ -224,6 +242,13 @@ def main() -> None:
         help="Confidence threshold for human segmentation (default: 0.35).",
     )
     parser.add_argument(
+        "--view",
+        type=str,
+        default="overlay",
+        choices=["overlay", "mask", "mask-card", "side-by-side"],
+        help="Display view mode (default: 'overlay'). Press 'm' or 'v' in GUI to cycle views.",
+    )
+    parser.add_argument(
         "--multi-person",
         action="store_true",
         help="Track all people in frame instead of single main user (default: single main user).",
@@ -261,6 +286,12 @@ def main() -> None:
         help="Path to save annotated output image or video.",
     )
     parser.add_argument(
+        "--save-mask",
+        type=str,
+        default=None,
+        help="Optional path to save binary mask card image.",
+    )
+    parser.add_argument(
         "--max-frames",
         type=int,
         default=None,
@@ -276,9 +307,11 @@ def main() -> None:
         enable_segmentation=not args.no_seg,
         enable_pose=not args.no_pose,
         single_person_mode=not args.multi_person,
+        view_mode=args.view,
         pose_model_path=args.pose_model,
         display=not args.no_display,
         save_output=args.save,
+        save_mask=args.save_mask,
         max_frames=args.max_frames,
     )
 

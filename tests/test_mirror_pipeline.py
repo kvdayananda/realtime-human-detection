@@ -343,6 +343,68 @@ class TestFitRangeMirrorPipeline(unittest.TestCase):
         self.assertGreaterEqual(len(multi_res["detections"]), 2)
         self.assertGreaterEqual(len(multi_res["segmentations"]), 2)
 
+    def test_13_render_binary_mask(self):
+        """Test rendering pure binary mask (pitch black background with solid white silhouette)."""
+        pipeline = FitRangeMirrorPipeline(
+            detection_model_path=self.det_model_path,
+            segmentation_model_path=self.seg_model_path,
+            enable_pose=False,
+        )
+        frame = cv2.imread(str(self.positive_image_path))
+        result = pipeline.process_frame(frame)
+
+        mask_vis = pipeline.render_binary_mask(result, show_card=False)
+        self.assertEqual(mask_vis.shape, frame.shape)
+        self.assertEqual(mask_vis.dtype, np.uint8)
+
+        # Pixels must be exclusively 0 (black background) or 255 (white silhouette)
+        unique_vals = set(np.unique(mask_vis).tolist())
+        self.assertTrue(unique_vals.issubset({0, 255}))
+        self.assertGreater((mask_vis == 255).sum(), 0)
+
+    def test_14_render_binary_mask_card(self):
+        """Test rendering binary mask formatted with UI card banner matching project spec."""
+        pipeline = FitRangeMirrorPipeline(
+            detection_model_path=self.det_model_path,
+            segmentation_model_path=self.seg_model_path,
+            enable_pose=False,
+        )
+        frame = cv2.imread(str(self.positive_image_path))
+        result = pipeline.process_frame(frame)
+
+        card = pipeline.render_binary_mask(result, show_card=True)
+        self.assertGreater(card.shape[0], frame.shape[0])
+        self.assertEqual(card.shape[1], frame.shape[1])
+        self.assertEqual(card.shape[2], 3)
+        self.assertEqual(card.dtype, np.uint8)
+
+    def test_15_render_visualization_view_modes(self):
+        """Test render_visualization across all view modes ('overlay', 'mask', 'mask_card', 'side_by_side')."""
+        pipeline = FitRangeMirrorPipeline(
+            detection_model_path=self.det_model_path,
+            segmentation_model_path=self.seg_model_path,
+            enable_pose=False,
+        )
+        frame = cv2.imread(str(self.positive_image_path))
+        result = pipeline.process_frame(frame)
+
+        # 1. Overlay
+        vis_overlay = pipeline.render_visualization(frame, result, view_mode="overlay")
+        self.assertEqual(vis_overlay.shape, frame.shape)
+
+        # 2. Pure Mask
+        vis_mask = pipeline.render_visualization(frame, result, view_mode="mask")
+        self.assertEqual(vis_mask.shape, frame.shape)
+
+        # 3. Mask Card
+        vis_card = pipeline.render_visualization(frame, result, view_mode="mask_card")
+        self.assertGreater(vis_card.shape[0], frame.shape[0])
+
+        # 4. Side-by-side
+        vis_sbs = pipeline.render_visualization(frame, result, view_mode="side_by_side")
+        self.assertEqual(vis_sbs.shape[0], frame.shape[0])
+        self.assertEqual(vis_sbs.shape[1], frame.shape[1] * 2)
+
 
 if __name__ == "__main__":
     unittest.main()

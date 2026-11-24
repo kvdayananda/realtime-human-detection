@@ -541,6 +541,10 @@ class FitRangeMirrorPipeline:
                 cv2.LINE_AA,
             )
 
+        if view_mode in ("side_by_side", "side-by-side"):
+            mask_view = self.render_binary_mask(result, show_card=False)
+            return np.hstack([vis, mask_view])
+
         return vis
 
     def close(self) -> None:

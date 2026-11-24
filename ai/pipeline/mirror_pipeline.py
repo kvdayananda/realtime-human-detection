@@ -333,6 +333,78 @@ class FitRangeMirrorPipeline:
             f"Unsupported frame type: {type(frame)}. Expected np.ndarray, str, or Path."
         )
 
+    def render_binary_mask(
+        self,
+        result: Dict[str, Any],
+        show_card: bool = False,
+        title: str = "Human Segmentation",
+        subtitle: str = "(Binary Mask)",
+    ) -> np.ndarray:
+        """Render binary segmentation mask (pitch black background with solid white person silhouette).
+
+        Args:
+            result: Result dictionary returned by `process_frame`.
+            show_card: Whether to wrap the mask in a card header banner matching project spec.
+            title: Card header title text.
+            subtitle: Card header subtitle text.
+
+        Returns:
+            np.ndarray of shape (H, W, 3) or (H + header_h, W, 3) with dtype uint8.
+        """
+        h, w = result.get("frame_shape", (480, 640))
+        comp_mask = result.get("composite_mask")
+
+        # Pitch black background
+        mask_canvas = np.zeros((h, w, 3), dtype=np.uint8)
+        if comp_mask is not None and (comp_mask == 255).any():
+            mask_canvas[comp_mask == 255] = (255, 255, 255)
+
+        if not show_card:
+            return mask_canvas
+
+        # Build card layout with header banner matching spec
+        header_h = max(int(h * 0.14), 54)
+        card = np.zeros((h + header_h, w, 3), dtype=np.uint8)
+
+        # Header background (deep navy slate)
+        card[:header_h, :] = (48, 30, 20)  # BGR navy slate
+        cv2.line(card, (0, header_h), (w, header_h), (70, 50, 40), 1)
+
+        # Body canvas
+        card[header_h:, :] = mask_canvas
+
+        # Render Header text
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        scale_title = max(w / 640.0 * 0.7, 0.45)
+        scale_sub = max(w / 640.0 * 0.55, 0.38)
+        (tw1, th1), _ = cv2.getTextSize(title, font, scale_title, 2)
+        (tw2, th2), _ = cv2.getTextSize(subtitle, font, scale_sub, 1)
+
+        y_title = max(int(header_h * 0.42), th1 + 6)
+        y_sub = max(int(header_h * 0.82), y_title + th2 + 10)
+
+        cv2.putText(
+            card,
+            title,
+            ((w - tw1) // 2, y_title),
+            font,
+            scale_title,
+            (255, 255, 255),
+            2,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            card,
+            subtitle,
+            ((w - tw2) // 2, y_sub),
+            font,
+            scale_sub,
+            (230, 230, 230),
+            1,
+            cv2.LINE_AA,
+        )
+        return card
+
     def render_visualization(
         self,
         frame: np.ndarray,
@@ -346,6 +418,7 @@ class FitRangeMirrorPipeline:
         bbox_color: Tuple[int, int, int] = (0, 255, 0),    # Pure green
         alpha: float = 0.35,
         fps: Optional[float] = None,
+        view_mode: str = "overlay",
     ) -> np.ndarray:
         """Render detection boxes, segmentation masks, skeleton landmarks, and HUD onto frame.
 
@@ -361,10 +434,16 @@ class FitRangeMirrorPipeline:
             bbox_color: Color tuple (B, G, R) for bounding box outline.
             alpha: Transparency factor for mask blending (0.0 to 1.0).
             fps: Current frame-per-second metric to display.
+            view_mode: Output view mode ('overlay', 'mask', 'mask_card', 'side_by_side').
 
         Returns:
             np.ndarray with rendered visual overlays (same shape and dtype as frame).
         """
+        if view_mode == "mask":
+            return self.render_binary_mask(result, show_card=False)
+        if view_mode in ("mask_card", "mask-card"):
+            return self.render_binary_mask(result, show_card=True)
+
         vis = frame.copy()
         h, w = vis.shape[:2]
 

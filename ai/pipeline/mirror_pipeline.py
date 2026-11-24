@@ -29,8 +29,8 @@ class FitRangeMirrorPipeline:
         detection_model_path: Optional[Union[str, Path]] = None,
         segmentation_model_path: Optional[Union[str, Path]] = None,
         pose_model_path: Optional[Union[str, Path]] = None,
-        det_conf: float = 0.35,
-        seg_conf: float = 0.35,
+        det_conf: float = 0.40,
+        seg_conf: float = 0.40,
         pose_conf: float = 0.5,
         iou_threshold: float = 0.45,
         imgsz: int = 640,
@@ -357,7 +357,12 @@ class FitRangeMirrorPipeline:
         # Pitch black background
         mask_canvas = np.zeros((h, w, 3), dtype=np.uint8)
         if comp_mask is not None and (comp_mask == 255).any():
-            mask_canvas[comp_mask == 255] = (255, 255, 255)
+            # Apply morphological closing and hole-filling for continuous silhouette
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+            smoothed = cv2.morphologyEx(comp_mask, cv2.MORPH_CLOSE, kernel)
+            contours, _ = cv2.findContours(smoothed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cv2.drawContours(smoothed, contours, -1, color=255, thickness=-1)
+            mask_canvas[smoothed == 255] = (255, 255, 255)
 
         if not show_card:
             return mask_canvas

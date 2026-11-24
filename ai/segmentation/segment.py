@@ -35,7 +35,7 @@ class HumanSegmenter:
     def __init__(
         self,
         model_path: Optional[Union[str, Path]] = None,
-        conf_threshold: float = 0.35,
+        conf_threshold: float = 0.40,
         imgsz: int = 640,
         device: str = "cpu",
     ) -> None:
@@ -226,6 +226,13 @@ class HumanSegmenter:
                 pts = np.array(poly, dtype=np.int32).reshape((-1, 1, 2))
                 cv2.fillPoly(composite, [pts], color=255)
 
+        # Apply morphological closing and hole-filling for smooth silhouette
+        if (composite == 255).any():
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+            composite = cv2.morphologyEx(composite, cv2.MORPH_CLOSE, kernel)
+            contours, _ = cv2.findContours(composite, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cv2.drawContours(composite, contours, -1, color=255, thickness=-1)
+
         return composite
 
     @staticmethod
@@ -279,8 +286,8 @@ def main() -> None:
     parser.add_argument(
         "--conf",
         type=float,
-        default=0.35,
-        help="Confidence threshold (default: 0.35).",
+        default=0.40,
+        help="Confidence threshold (default: 0.40).",
     )
     parser.add_argument(
         "--imgsz",

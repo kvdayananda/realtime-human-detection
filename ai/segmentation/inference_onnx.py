@@ -48,7 +48,7 @@ class HumanSegmenterONNX:
     def __init__(
         self,
         model_path: Optional[Union[str, Path]] = None,
-        conf_threshold: float = 0.35,
+        conf_threshold: float = 0.40,
         iou_threshold: float = 0.45,
         imgsz: int = 640,
         providers: Optional[List[str]] = None,
@@ -230,10 +230,24 @@ class HumanSegmenterONNX:
         composite = np.zeros((h, w), dtype=np.uint8)
 
         for item in segmentations:
-            poly = item.get("polygon", [])
-            if len(poly) >= 3:
-                pts = np.array(poly, dtype=np.int32).reshape((-1, 1, 2))
-                cv2.fillPoly(composite, [pts], color=255)
+            polys = item.get("polygons")
+            if polys:
+                for poly in polys:
+                    if len(poly) >= 3:
+                        pts = np.array(poly, dtype=np.int32).reshape((-1, 1, 2))
+                        cv2.fillPoly(composite, [pts], color=255)
+            else:
+                poly = item.get("polygon", [])
+                if len(poly) >= 3:
+                    pts = np.array(poly, dtype=np.int32).reshape((-1, 1, 2))
+                    cv2.fillPoly(composite, [pts], color=255)
+
+        # Apply morphological closing and hole-filling for continuous, smooth silhouette
+        if (composite == 255).any():
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+            composite = cv2.morphologyEx(composite, cv2.MORPH_CLOSE, kernel)
+            contours, _ = cv2.findContours(composite, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cv2.drawContours(composite, contours, -1, color=255, thickness=-1)
 
         return composite
 
@@ -386,18 +400,29 @@ class HumanSegmenterONNX:
                     unpadded, (orig_w, orig_h), interpolation=cv2.INTER_LINEAR
                 )
 
-                # 6. Binary threshold at 0.5
+                # 6. Binary threshold at 0.5 and morphological closing
                 bin_mask = (mask_full > 0.5).astype(np.uint8)
+                kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+                bin_mask = cv2.morphologyEx(bin_mask, cv2.MORPH_CLOSE, kernel)
                 mask_area = int(bin_mask.sum())
 
-                # 7. Extract external boundary polygon contour
+                # 7. Extract external boundary polygon contours (preserving all body components)
                 contours, _ = cv2.findContours(
                     bin_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
                 )
+                polygons: List[List[List[float]]] = []
                 polygon: List[List[float]] = []
                 if contours:
-                    # Select largest contour
-                    largest = max(contours, key=cv2.contourArea)
+                    valid_contours = [c for c in contours if cv2.contourArea(c) >= 30.0]
+                    if not valid_contours:
+                        valid_contours = [max(contours, key=cv2.contourArea)]
+                    for c in valid_contours:
+                        polygons.append([
+                            [round(float(pt[0][0]), 2), round(float(pt[0][1]), 2)]
+                            for pt in c
+                        ])
+                    # Primary contour for backward compatibility
+                    largest = max(valid_contours, key=cv2.contourArea)
                     polygon = [
                         [round(float(pt[0][0]), 2), round(float(pt[0][1]), 2)]
                         for pt in largest
@@ -415,6 +440,7 @@ class HumanSegmenterONNX:
                         "class_id": self.PERSON_CLASS_ID,
                         "class_name": self.PERSON_CLASS_NAME,
                         "polygon": polygon,
+                        "polygons": polygons,
                         "mask_area": mask_area,
                     }
                 )
@@ -443,8 +469,8 @@ def main() -> None:
     parser.add_argument(
         "--conf",
         type=float,
-        default=0.35,
-        help="Confidence threshold (default: 0.35).",
+        default=0.40,
+        help="Confidence threshold (default: 0.40).",
     )
     parser.add_argument(
         "--iou",

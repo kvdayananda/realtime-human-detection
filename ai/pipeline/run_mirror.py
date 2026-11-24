@@ -43,8 +43,8 @@ logger = logging.getLogger("FitRangeMirror.App")
 
 def run_pipeline(
     source: str = "0",
-    det_conf: float = 0.35,
-    seg_conf: float = 0.35,
+    det_conf: float = 0.40,
+    seg_conf: float = 0.40,
     enable_detection: bool = True,
     enable_segmentation: bool = True,
     enable_pose: bool = True,
@@ -232,14 +232,14 @@ def main() -> None:
     parser.add_argument(
         "--det-conf",
         type=float,
-        default=0.35,
-        help="Confidence threshold for human detection (default: 0.35).",
+        default=0.40,
+        help="Confidence threshold for human detection (default: 0.40).",
     )
     parser.add_argument(
         "--seg-conf",
         type=float,
-        default=0.35,
-        help="Confidence threshold for human segmentation (default: 0.35).",
+        default=0.40,
+        help="Confidence threshold for human segmentation (default: 0.40).",
     )
     parser.add_argument(
         "--view",

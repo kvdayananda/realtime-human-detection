@@ -52,7 +52,7 @@ class HumanDetectorONNX:
     def __init__(
         self,
         model_path: Optional[Union[str, Path]] = None,
-        conf_threshold: float = 0.35,
+        conf_threshold: float = 0.40,
         iou_threshold: float = 0.45,
         imgsz: int = 640,
         providers: Optional[List[str]] = None,
@@ -355,8 +355,8 @@ def main() -> None:
     parser.add_argument(
         "--conf",
         type=float,
-        default=0.35,
-        help="Confidence threshold (default: 0.35).",
+        default=0.40,
+        help="Confidence threshold (default: 0.40).",
     )
     parser.add_argument(
         "--iou",

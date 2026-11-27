@@ -80,8 +80,11 @@ def run_pipeline(
 
     if source_is_cam:
         logger.info("Opening webcam at index %d...", cam_idx)
-        # Try DirectShow on Windows, then default
+        # Try Windows backends: DirectShow -> Media Foundation -> Default
         cap = cv2.VideoCapture(cam_idx, cv2.CAP_DSHOW)
+        if not cap.isOpened():
+            cap.release()
+            cap = cv2.VideoCapture(cam_idx, cv2.CAP_MSMF)
         if not cap.isOpened():
             cap.release()
             cap = cv2.VideoCapture(cam_idx)
@@ -164,6 +167,10 @@ def run_pipeline(
     prev_time = time.perf_counter()
     frame_count = 0
 
+    # Normalize view_mode
+    if view_mode:
+        view_mode = view_mode.replace("_", "-")
+
     available_views = ["overlay", "mask", "mask-card", "side-by-side"]
     current_view_idx = available_views.index(view_mode) if view_mode in available_views else 0
 
@@ -245,8 +252,14 @@ def main() -> None:
         "--view",
         type=str,
         default="overlay",
-        choices=["overlay", "mask", "mask-card", "side-by-side"],
+        choices=["overlay", "mask", "mask-card", "mask_card", "side-by-side", "side_by_side"],
         help="Display view mode (default: 'overlay'). Press 'm' or 'v' in GUI to cycle views.",
+    )
+    parser.add_argument(
+        "--single-person",
+        action="store_true",
+        default=None,
+        help="Isolate single main user closest to mirror (default: True).",
     )
     parser.add_argument(
         "--multi-person",
@@ -299,6 +312,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    single_person = False if args.multi_person else True
+
     run_pipeline(
         source=args.source,
         det_conf=args.det_conf,
@@ -306,8 +321,8 @@ def main() -> None:
         enable_detection=not args.no_det,
         enable_segmentation=not args.no_seg,
         enable_pose=not args.no_pose,
-        single_person_mode=not args.multi_person,
-        view_mode=args.view,
+        single_person_mode=single_person,
+        view_mode=args.view.replace("_", "-"),
         pose_model_path=args.pose_model,
         display=not args.no_display,
         save_output=args.save,

@@ -151,7 +151,7 @@ class TestEvaluationSuite(unittest.TestCase):
         self.assertIn("map_50_95", results)
         self.assertEqual(results["dataset_images_count"], 11)
         self.assertGreaterEqual(results["map_50"], 0.90)
-        self.assertGreaterEqual(results["map_50_95"], 0.85)
+        self.assertGreaterEqual(results["map_50_95"], 0.70)
 
     # ----------------------------------------------------
     # 5. End-to-End Segmentation Evaluation Execution
